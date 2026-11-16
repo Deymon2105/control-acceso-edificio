@@ -8,6 +8,7 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Badge } from '../ui/Badge'
 import { Modal } from '../ui/Modal'
+import { formatearRutEnVivo, formatearRut } from '../../utils/validators'
 
 export const AdminRestricciones: React.FC = () => {
   const { showSuccess, showError } = useToast()
@@ -251,7 +252,12 @@ export const AdminRestricciones: React.FC = () => {
               label="RUT / Documento *"
               placeholder="Ej: 11.111.111-1"
               value={rut}
-              onChange={(e) => setRut(e.target.value)}
+              onChange={(e) => setRut(formatearRutEnVivo(e.target.value))}
+              onBlur={() => {
+                if (rut.trim()) {
+                  setRut(formatearRut(rut))
+                }
+              }}
               required
               autoFocus
             />

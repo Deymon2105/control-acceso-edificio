@@ -3,7 +3,9 @@
  */
 
 /**
- * Valida un RUT chileno utilizando el algoritmo oficial de Módulo 11.
+ * Valida un RUT chileno verificando el formato chileno (cuerpo + DV).
+ * Permite cualquier dígito verificador ingresado por el usuario (0-9 o K),
+ * adaptándose al ingreso flexible sin forzar un cálculo de Módulo 11 restrictivo.
  */
 export function validarRutChileno(rutInput: string): { valido: boolean; mensaje?: string; rutFormateado?: string } {
   if (!rutInput || !rutInput.trim()) {
@@ -13,70 +15,63 @@ export function validarRutChileno(rutInput: string): { valido: boolean; mensaje?
   // Limpiar puntos, guiones y espacios
   const limpio = rutInput.replace(/[.\-\s]/g, '').toUpperCase()
 
-  // Comprobar formato básico: entre 7 y 9 caracteres alfanuméricos, terminando en dígito o K
-  if (!/^[0-9]{7,8}[0-9K]$/.test(limpio)) {
+  // Comprobar formato básico de RUT chileno: entre 6 y 8 dígitos para el cuerpo y 1 dígito verificador (0-9 o K)
+  // Total entre 7 y 9 caracteres
+  if (!/^[0-9]{6,8}[0-9K]$/.test(limpio)) {
     return {
       valido: false,
-      mensaje: 'Formato de RUT inválido. Debe ingresar ej: 17.345.678-9 o 11.111.111-1',
+      mensaje: 'Formato de RUT inválido. Ingrese entre 7 y 8 dígitos más dígito verificador (ej: 17.345.876-8 o 17345876-8)',
     }
   }
 
-  const cuerpo = limpio.slice(0, -1)
-  const dv = limpio.slice(-1)
-
-  // Algoritmo Módulo 11
-  let suma = 0
-  let multiplicador = 2
-  for (let i = cuerpo.length - 1; i >= 0; i--) {
-    suma += parseInt(cuerpo[i], 10) * multiplicador
-    multiplicador = multiplicador === 7 ? 2 : multiplicador + 1
-  }
-
-  const resto = 11 - (suma % 11)
-  let dvEsperado = ''
-  if (resto === 11) {
-    dvEsperado = '0'
-  } else if (resto === 10) {
-    dvEsperado = 'K'
-  } else {
-    dvEsperado = resto.toString()
-  }
-
-  if (dv !== dvEsperado) {
-    return {
-      valido: false,
-      mensaje: `Dígito verificador inválido para el RUT ingresado (debe terminar en -${dvEsperado})`,
-    }
-  }
-
-  // Formatear RUT estándar XX.XXX.XXX-X
+  // Formatear RUT estándar XX.XXX.XXX-X o X.XXX.XXX-X
   const rutFormateado = formatearRut(limpio)
 
   return { valido: true, rutFormateado }
 }
 
 /**
- * Formatea un RUT limpio o semilimpio a formato XX.XXX.XXX-X
+ * Formatea un RUT limpio o semilimpio a formato XX.XXX.XXX-X o X.XXX.XXX-X
  */
 export function formatearRut(rut: string): string {
-  const limpio = rut.replace(/[.\-\s]/g, '').toUpperCase()
+  const limpio = rut.replace(/[^0-9kK]/g, '').toUpperCase()
   if (limpio.length < 2) return limpio
 
   const cuerpo = limpio.slice(0, -1)
   const dv = limpio.slice(-1)
 
-  let formateado = ''
-  let count = 0
-  for (let i = cuerpo.length - 1; i >= 0; i--) {
-    formateado = cuerpo[i] + formateado
-    count++
-    if (count === 3 && i > 0) {
-      formateado = '.' + formateado
-      count = 0
-    }
+  const cuerpoFormateado = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  return `${cuerpoFormateado}-${dv}`
+}
+
+/**
+ * Formatea un RUT mientras el usuario escribe o pega texto en vivo.
+ * Si se ingresa de corrido sin puntos o con guión, agrega los puntos y el guión automáticamente.
+ */
+export function formatearRutEnVivo(input: string): string {
+  if (!input) return ''
+  const limpioSinGuion = input.replace(/[^0-9kK]/g, '').toUpperCase().slice(0, 9)
+  if (!limpioSinGuion) return ''
+
+  // Si tiene guión explícito
+  if (input.includes('-')) {
+    const partes = input.split('-')
+    const cuerpoLimpio = partes[0].replace(/\D/g, '').slice(0, 8)
+    const dvLimpio = partes[1].replace(/[^0-9kK]/g, '').toUpperCase().slice(0, 1)
+    const cuerpoFormateado = cuerpoLimpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    return partes.length > 1 && dvLimpio ? `${cuerpoFormateado}-${dvLimpio}` : `${cuerpoFormateado}-`
   }
 
-  return `${formateado}-${dv}`
+  // Si se ingresó de corrido y ya alcanzó los 9 caracteres (cuerpo de 8 + DV)
+  if (limpioSinGuion.length === 9) {
+    const cuerpo = limpioSinGuion.slice(0, -1)
+    const dv = limpioSinGuion.slice(-1)
+    const cuerpoFormateado = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    return `${cuerpoFormateado}-${dv}`
+  }
+
+  // Mientras escribe el cuerpo (hasta 8 dígitos)
+  return limpioSinGuion.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
 /**

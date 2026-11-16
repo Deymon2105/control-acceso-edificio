@@ -13,7 +13,7 @@ import { Input } from '../ui/Input'
 import { CriticalAlertBanner } from '../ui/CriticalAlertBanner'
 import { visitasApi, directorioApi, restriccionesApi } from '../../api/endpoints'
 import { useToast } from '../../context/ToastContext'
-import { validarRutChileno, validarTelefonoChileno } from '../../utils/validators'
+import { validarRutChileno, validarTelefonoChileno, formatearRutEnVivo } from '../../utils/validators'
 import type {
   BuscarRutResponseDto,
   DepartamentoDto,
@@ -348,10 +348,11 @@ export const VisitaModal: React.FC<VisitaModalProps> = ({
               ref={rutInputRef}
               label="Documento de Identidad (RUT / Pasaporte) *"
               hint="Autocompleta historial y valida lista de seguridad"
-              placeholder="Ej: 17.345.678-9 o 11.111.111-1"
+              placeholder="Ej: 17.345.876-8 o 11.111.111-1"
               value={rut}
               onChange={(e) => {
-                setRut(e.target.value)
+                const formatted = formatearRutEnVivo(e.target.value)
+                setRut(formatted)
                 if (rutError) setRutError(null)
               }}
               onBlur={handleRutBlur}

@@ -84,12 +84,14 @@ export const BitacoraView: React.FC = () => {
 
   const handleConfirmEliminar = async () => {
     if (!itemAEliminar) return
+    const idParaEliminar = itemAEliminar.id
     setIsDeleting(true)
     try {
-      await bitacoraApi.eliminar(itemAEliminar.id)
+      await bitacoraApi.eliminar(idParaEliminar)
+      setNovedades((prev) => prev.filter((item) => item.id !== idParaEliminar))
       showSuccess('Registro de bitácora eliminado correctamente')
       setItemAEliminar(null)
-      loadBitacora()
+      await loadBitacora()
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al eliminar registro de bitácora'
       showError(msg)
@@ -256,25 +258,29 @@ export const BitacoraView: React.FC = () => {
                     type="button"
                     onClick={() => setItemAEliminar(item)}
                     title="Eliminar este registro de bitácora"
+                    aria-label="Eliminar este registro de bitácora"
                     style={{
                       background: 'transparent',
-                      border: 'none',
+                      border: '1px solid transparent',
                       color: 'var(--text-muted)',
                       cursor: 'pointer',
-                      padding: '4px',
+                      width: 26,
+                      height: 26,
                       borderRadius: '4px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      transition: 'all 0.15s',
+                      transition: 'all 0.15s ease-in-out',
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = '#ef4444'
-                      e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.12)'
+                      e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)'
+                      e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)'
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.color = 'var(--text-muted)'
                       e.currentTarget.style.backgroundColor = 'transparent'
+                      e.currentTarget.style.borderColor = 'transparent'
                     }}
                   >
                     <Trash2 size={14} />
